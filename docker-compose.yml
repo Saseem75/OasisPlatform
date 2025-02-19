@@ -14,7 +14,7 @@ services:
      - rabbit
    environment:
      - OASIS_ADMIN_USER=admin
-     - OASIS_ADMIN_PASS=password 
+     - OASIS_ADMIN_PASS=password
      - OASIS_DEBUG=1
      - OASIS_RABBIT_HOST=rabbit
      - OASIS_RABBIT_PORT=5672
@@ -24,7 +24,8 @@ services:
      - OASIS_SERVER_DB_PASS=oasis
      - OASIS_SERVER_DB_USER=oasis
      - OASIS_SERVER_DB_NAME=oasis
-     - OASIS_SERVER_DB_PORT=3306
+     - OASIS_SERVER_DB_PORT=5432
+     - OASIS_SERVER_DB_ENGINE=src.server.oasisapi.custom_db_backend
      - OASIS_CELERY_DB_ENGINE=db+mysql+pymysql
      - OASIS_CELERY_DB_HOST=celery-db
      - OASIS_CELERY_DB_PASS=password
@@ -52,7 +53,8 @@ services:
      - OASIS_SERVER_DB_PASS=oasis
      - OASIS_SERVER_DB_USER=oasis
      - OASIS_SERVER_DB_NAME=oasis
-     - OASIS_SERVER_DB_PORT=3306
+     - OASIS_SERVER_DB_PORT=5432
+     - OASIS_SERVER_DB_ENGINE=src.server.oasisapi.custom_db_backend.base
      - OASIS_CELERY_DB_ENGINE=db+mysql+pymysql
      - OASIS_CELERY_DB_HOST=celery-db
      - OASIS_CELERY_DB_PASS=password
@@ -90,16 +92,15 @@ services:
      - ${OASIS_MEDIA_ROOT:-./docker-shared-fs}:/shared-fs:rw
   server-db:
     restart: always
-    image: mysql:8.0
-    command:
-      - --default-authentication-plugin=mysql_native_password
+    image: postgres
     environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_USER=oasis
-      - MYSQL_PASSWORD=oasis
-      - MYSQL_DATABASE=oasis
+      - POSTGRES_DB=oasis
+      - POSTGRES_USER=oasis
+      - POSTGRES_PASSWORD=oasis
     volumes:
-      - ${OASIS_DOCKER_DB_DATA_DIR:-./db-data}/server:/var/lib/mysql/:rw
+      - ${OASIS_DOCKER_DB_DATA_DIR:-./db-data}/server:/var/lib/postgresql/data:rw
+    ports:
+      - 33307:5432
   celery-db:
     restart: always
     image: mysql
@@ -123,14 +124,14 @@ services:
       - 15672:15672
   flower:
     restart: always
-    image: iserko/docker-celery-flower 
+    image: iserko/docker-celery-flower
     ports:
       - 5555:5555
     environment:
       - CELERY_BROKER_URL=amqp://rabbit:rabbit@rabbit:5672
     entrypoint:
-      - flower 
-      - --port=5555 
+      - flower
+      - --port=5555
       - --broker_api=http://rabbit:rabbit@rabbit:15672/api/
     links:
      - celery-db
